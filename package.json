@@ -1,0 +1,45 @@
+{
+	"name": "snack",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"dev:all": "concurrently \"wrangler dev\" \"slack run\"",
+		"start": "wrangler dev",
+		"test": "vitest",
+		"cf-typegen": "wrangler types",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "^0.8.19",
+		"@eslint/js": "^9.0.0",
+		"@slack/cli-hooks": "^1.2.1",
+		"@types/crypto-js": "^4.2.2",
+		"@types/node": "^24.7.1",
+		"@typescript-eslint/eslint-plugin": "^8.0.0",
+		"@typescript-eslint/parser": "^8.0.0",
+		"concurrently": "^9.2.1",
+		"eslint": "^9.0.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-prettier": "^5.5.4",
+		"mastra": "^0.16.0",
+		"tsx": "^4.20.6",
+		"typescript": "^5.9.3",
+		"vitest": "~3.2.0",
+		"wrangler": "^4.42.2"
+	},
+	"dependencies": {
+		"@mastra/core": "^0.21.0",
+		"@mastra/mcp": "^0.13.5",
+		"@slack/bolt": "^4.5.0",
+		"crypto-js": "^4.2.0",
+		"dotenv": "^17.2.3",
+		"hono": "^4.9.10",
+		"zod": "^3"
+	}
+}
