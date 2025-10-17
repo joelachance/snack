@@ -7,19 +7,23 @@
 	"name": "snack",
 	"main": "api/index.ts",
 	"compatibility_date": "2025-10-08",
-	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
 	"observability": {
 		"enabled": true,
 	},
-	"kv_namespaces": [
-		{
-			"binding": "snack-kv"
-		},
-	],
 	"vars": {
 		"ENVIRONMENT": "production",
-		"ENCRYPTION_KEY": "<CREATE-A-STRONG-ENCRYPTION-KEY>"
+		"ENCRYPTION_KEY": "joe"
 	},
+	"kv_namespaces": [
+		{
+			"binding": "SNACK-KV",
+			"id": "7def6bc41ab846b6beb2bec94ed2d116",
+			"remote": true
+		}
+	],
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

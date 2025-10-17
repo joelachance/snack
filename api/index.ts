@@ -8,7 +8,7 @@ import app from './endpoints';
  * It's the main entry point that Wrangler uses to deploy and run our application.
  *
  * ## Environment Variables (env):
- * - `snack-kv`: KV namespace for storing server configs and encrypted API keys
+ * - `SNACK-KV`: KV namespace for storing server configs and encrypted API keys
  * - `ENCRYPTION_KEY`: Secret key for encrypting/decrypting user API keys
  *
  * ## Related Files:

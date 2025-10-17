@@ -4,7 +4,7 @@ import { encryptApiKey } from './utils/crypto';
 import { UserAuthManager } from './utils/auth';
 
 interface Env {
-	'snack-kv': KVNamespace;
+	'SNACK-KV': KVNamespace;
 	ENCRYPTION_KEY: string;
 	OPENAI_API_KEY: string;
 }
@@ -33,7 +33,7 @@ const app = new Hono<{ Bindings: Env }>();
 app.get('/mcp/servers', async c => {
 	try {
 		const userId = c.req.query('id');
-		const client = new McpServerHub(c.env['snack-kv']);
+		const client = new McpServerHub(c.env['SNACK-KV']);
 		const servers = await client.loadServersFromKV();
 		const serverList: ServerInfo[] = [];
 
@@ -45,7 +45,7 @@ app.get('/mcp/servers', async c => {
 					// Check if user has authentication for this server
 					let hasAuth = false;
 					if (c.env.ENCRYPTION_KEY) {
-						const userAuth = new UserAuthManager(c.env['snack-kv']);
+						const userAuth = new UserAuthManager(c.env['SNACK-KV']);
 						hasAuth = await userAuth.hasApiKey(userId, name);
 					}
 
@@ -100,7 +100,7 @@ app.post('/mcp/servers', async c => {
 		const body = await c.req.json();
 		const { userId, serverName, serverUrl, apiKey } = body;
 
-		const client = new McpServerHub(c.env['snack-kv']);
+		const client = new McpServerHub(c.env['SNACK-KV']);
 		await client.saveServerToKV(serverName, serverUrl);
 
 		if (!c.env.ENCRYPTION_KEY) {
@@ -110,7 +110,7 @@ app.post('/mcp/servers', async c => {
 
 		try {
 			const encryptedApiKey = encryptApiKey(apiKey, c.env.ENCRYPTION_KEY);
-			const userAuth = new UserAuthManager(c.env['snack-kv']);
+			const userAuth = new UserAuthManager(c.env['SNACK-KV']);
 			await userAuth.saveApiKey(userId, serverName, encryptedApiKey);
 		} catch (error) {
 			console.error('Failed to save to KV:', error);
@@ -140,7 +140,7 @@ app.delete('/mcp/servers', async c => {
 	try {
 		const body = await c.req.json();
 		const { serverName } = body;
-		const client = new McpServerHub(c.env['snack-kv']);
+		const client = new McpServerHub(c.env['SNACK-KV']);
 		await client.deleteServerFromKV(serverName);
 		return c.json({ message: `${serverName} server configuration deleted` });
 	} catch (err) {
@@ -168,7 +168,7 @@ app.get('/mcp/tools', async c => {
 			return c.json({ error: 'User ID is required' }, 400);
 		}
 
-		const client = new McpServerHub(c.env['snack-kv']);
+		const client = new McpServerHub(c.env['SNACK-KV']);
 
 		// Get toolsets for the user (includes all accessible servers)
 		const tools = await client.listAvailTools(userId, c.env.ENCRYPTION_KEY);
@@ -208,7 +208,7 @@ app.post('/mcp/auth/:id', async (c): Promise<Response> => {
 		}
 
 		const encryptedApiKey = encryptApiKey(apiKey, c.env.ENCRYPTION_KEY);
-		const userAuth = new UserAuthManager(c.env['snack-kv']);
+		const userAuth = new UserAuthManager(c.env['SNACK-KV']);
 		await userAuth.saveApiKey(userId, serverName, encryptedApiKey);
 
 		return c.json({ message: 'API key saved successfully' }, 200);
@@ -249,7 +249,7 @@ app.post('/llm/chat', async c => {
 			return c.json({ error: 'Message is required' }, 400);
 		}
 
-		const client = new McpServerHub(c.env['snack-kv']);
+		const client = new McpServerHub(c.env['SNACK-KV']);
 
 		// Load conversation history using Slack's thread ID
 		const slackThreadId = threadId ?? 'main';
