@@ -11,13 +11,22 @@ Replace the placeholder values in `wrangler.jsonc`:
 - `"name": "snack"` → You can leave this, or change the name and make it your own
 - `"ENCRYPTION_KEY": "<CREATE-A-STRONG-ENCRYPTION-KEY>"` → Pick a good one
 
+
+Once you've done this, run:
+```bash
+bunx wrangler deploy
+```
+This will give you an initial setup in Cloudflare.
+
 ### 2. Create KV Namespaces
 You'll need to create your own KV namespace.  
-(KV is Cloudflare's key value store. We only support KV currently)
+(KV is Cloudflare's key value store. We only support KV currently)  
+
+**Note:** Please use 'SNACK-KV' as the value, unless you change it in /api.
 
 ```bash
 # Create production KV namespace
-npx wrangler kv namespace create "snack-kv"
+npx wrangler kv namespace create SNACK-KV
 
 # Copy the returned namespace IDs and update your `wrangler.jsonc` file.
 # Set the encryption key you picked in step 1
