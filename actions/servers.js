@@ -8,22 +8,55 @@ export const serverActions = app => {
 	 * @param {string} userId The Slack user ID
 	 * @returns {Promise<Array>} Array of server objects
 	 */
-	const listServers = async () => {
-		const response = await fetch(`${process.env.API_URL}/mcp/servers`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
-		return response.json();
+	const listServers = async (userId) => {
+		// Fallback to hardcoded URL if env var is missing
+		const apiUrl = process.env.API_URL || 'http://localhost:8787';
+		const url = `${apiUrl}/mcp/servers?id=${userId}`;
+		
+		try {
+			const response = await fetch(url, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+			
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`HTTP ${response.status}: ${errorText}`);
+			}
+			
+			const data = await response.json();
+			return data;
+		} catch (error) {
+			console.error(`Error fetching servers:`, error);
+			throw error;
+		}
 	};
 
 	// Action to list all servers
 	app.action('list_servers', async ({ ack, body, client }) => {
 		const threadTs = body?.message?.ts;
+		const userId = body?.user?.id;
 
 		try {
-			const servers = await listServers();
+			const servers = await listServers(userId);
+
+			// Debug logging
+			console.log('Raw servers response:', servers);
+			console.log('Type of servers:', typeof servers);
+			console.log('Is array:', Array.isArray(servers));
+
+			// Check if servers is an array
+			if (!Array.isArray(servers)) {
+				console.error('Servers response is not an array:', servers);
+				await client.chat.postMessage({
+					channel: body?.channel?.id || body?.user?.id,
+					text: `Error: Invalid response from server. Got ${typeof servers} instead of array. Response: ${JSON.stringify(servers)}`,
+					thread_ts: threadTs,
+				});
+				return;
+			}
 
 			if (servers.length === 0) {
 				await client.chat.postMessage({
