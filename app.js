@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Main Cloudflare Worker for Snack Slack app.
+ * Routes requests to Slack Events API, OAuth callbacks, and health checks.
+ */
+
 import { SlackApp } from 'slack-cloudflare-workers';
 import { registerMessageEvents } from './src/messages.js';
 import { registerServerActions } from './src/actions/server.js';
@@ -11,6 +16,16 @@ import { handleOAuthCallback } from './src/views/oauth-callback.js';
 import { parseSlackPayload, handleUrlVerification } from './src/utils/slack-payload.js';
 
 export default {
+	/**
+	 * Routes requests:
+	 * - /slack/events → Slack app
+	 * - /oauth/callback → OAuth handler
+	 * - else → status
+	 * @param {Request} request
+	 * @param {Object} env - Worker environment variables
+	 * @param {ExecutionContext} ctx
+	 * @returns {Promise<Response>}
+	 */
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
 
@@ -20,7 +35,7 @@ export default {
 				const rawBody = await request.text();
 				const payload = parseSlackPayload(rawBody);
 				
-				// Used to handle initial Slack verification
+				// Handle initial Slack verification during app setup
 				if (payload) {
 					const verificationResponse = handleUrlVerification(payload);
 					if (verificationResponse) {
