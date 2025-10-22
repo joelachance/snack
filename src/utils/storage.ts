@@ -1,6 +1,6 @@
 /**
  * Cloudflare KV Storage Operations
- * 
+ *
  * Key patterns:
  * - `auth:{userId}:{serviceName}` - User API keys (encrypted)
  * - `oauth:state:{state}` - OAuth flow state (10min TTL)
@@ -45,7 +45,6 @@ export async function storeUserApiKey(
 	await env['SNACK-KV']?.put(key, JSON.stringify({ apiKey: encryptedApiKey }));
 }
 
-
 /**
  * Get user API key from KV storage
  * @param userId user ID
@@ -53,12 +52,21 @@ export async function storeUserApiKey(
  * @param env environment variables
  * @returns encrypted API key or null if not found
  */
-export async function getUserApiKey(userId: string, serviceName: string, env: Env): Promise<string | null> {
+export async function getUserApiKey(
+	userId: string,
+	serviceName: string,
+	env: Env
+): Promise<string | null> {
 	const key = `auth:${userId}:${serviceName}`;
 	const value = await env['SNACK-KV']?.get(key);
 	if (!value) return null;
 	try {
-		const authData = JSON.parse(value) as { apiKey: string | null; userId: string; serviceName: string; createdAt: string };
+		const authData = JSON.parse(value) as {
+			apiKey: string | null;
+			userId: string;
+			serviceName: string;
+			createdAt: string;
+		};
 		return authData.apiKey;
 	} catch {
 		// If it's not JSON, treat it as a direct encrypted API key (legacy format)
@@ -73,7 +81,11 @@ export async function getUserApiKey(userId: string, serviceName: string, env: En
  * @param env environment variables
  * @returns True if the user has an API key stored
  */
-export async function userHasApiKey(userId: string, serviceName: string, env: Env): Promise<boolean> {
+export async function userHasApiKey(
+	userId: string,
+	serviceName: string,
+	env: Env
+): Promise<boolean> {
 	const apiKey = await getUserApiKey(userId, serviceName, env);
 	return apiKey !== null;
 }
@@ -103,7 +115,10 @@ export async function storeOAuthState(
  * @param env environment variables
  * @returns state data or null if not found/expired
  */
-export async function getOAuthState(state: string, env: Env): Promise<{ userId: string; service: string; timestamp: number } | null> {
+export async function getOAuthState(
+	state: string,
+	env: Env
+): Promise<{ userId: string; service: string; timestamp: number } | null> {
 	const key = `oauth:state:${state}`;
 	const value = await env['SNACK-KV']?.get(key);
 	if (!value) return null;
@@ -125,13 +140,13 @@ export async function deleteOAuthState(state: string, env: Env): Promise<void> {
 }
 
 /**
- * Store encrypted OAuth token
+ * Store encrypted OAuth token to storage
  * @param userId user ID
  * @param service service name
  * @param encryptedToken encrypted token data
  * @param env environment variables
  */
-export async function storeOAuthToken(
+export async function storeEncryptedOAuthToken(
 	userId: string,
 	service: string,
 	encryptedToken: string,
@@ -142,15 +157,19 @@ export async function storeOAuthToken(
 }
 
 /**
- * Get encrypted OAuth token
+ * Get encrypted OAuth token from storage
  * @param userId user ID
  * @param service service name
  * @param env environment variables
  * @returns encrypted token or null if not found
  */
-export async function getOAuthToken(userId: string, service: string, env: Env): Promise<string | null> {
+export async function getEncryptedOAuthToken(
+	userId: string,
+	service: string,
+	env: Env
+): Promise<string | null> {
 	const key = `oauth:token:${userId}:${service}`;
-	return await env['SNACK-KV']?.get(key) ?? null;
+	return (await env['SNACK-KV']?.get(key)) ?? null;
 }
 
 // ============================================================================

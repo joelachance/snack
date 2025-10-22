@@ -1,12 +1,12 @@
 /**
  * Authentication and Access Control Utilities
- * 
+ *
  * This module provides functions for checking user authentication and server access.
  * It handles both API key and OAuth token authentication.
  */
 
 import { getUserApiKey } from './storage';
-import { getOAuthToken } from '../oauth.js';
+import { getOAuthToken } from './oauth.js';
 import { OAUTH_SERVICES } from '../../configs/oauth.js';
 import { decrypt } from './crypto';
 import type { Env } from '../types';
@@ -20,29 +20,26 @@ import type { Env } from '../types';
  * @returns Decrypted API key or undefined if not found
  */
 export async function findUserApiKey(
-	userId: string, 
-	serverName: string, 
-	encryptionKey: string, 
+	userId: string,
+	serverName: string,
+	encryptionKey: string,
 	env: Env
 ): Promise<string | undefined> {
-	const possibleNames = [
-		serverName,
-		serverName.toLowerCase(),
-	];
-	
+	const possibleNames = [serverName, serverName.toLowerCase()];
+
 	for (const name of possibleNames) {
 		const encryptedApiKey = await getUserApiKey(userId, name, env);
 		if (encryptedApiKey) {
 			return decrypt(encryptedApiKey, { ENCRYPTION_KEY: encryptionKey });
 		}
 	}
-	
+
 	return undefined;
 }
 
 /**
  * Check if a user has access to a specific server.
- * 
+ *
  * @param userId - User ID to check access for
  * @param serverName - Name of the server to check
  * @param encryptionKey - Optional encryption key for authentication check
@@ -77,7 +74,7 @@ export async function userHasAccessToServer(
 
 /**
  * Get servers that a user has access to, optionally filtered by authentication status.
- * 
+ *
  * @param userId - User ID to check access for
  * @param encryptionKey - Optional encryption key for authentication check
  * @param env - Environment variables
@@ -132,7 +129,7 @@ export async function getAccessibleServersForUser(
 /**
  * Get only servers that a user has authenticated access to.
  * This is a convenience function that calls getAccessibleServersForUser with requireAuth=true.
- * 
+ *
  * @param userId - User ID to check access for
  * @param encryptionKey - Optional encryption key for authentication check
  * @param env - Environment variables
