@@ -9,7 +9,6 @@ import { storeOAuthState, getOAuthToken as getOAuthTokenFromStorage, storeOAuthT
  * @param {import('./types').Env} env - Environment variables
  */
 export function registerOAuthActions(app, env) {
-	// Open OAuth modal
 	app.action('open_oauth_modal', async obj => {
 		const { payload: body, context } = obj;
 		const client = context.client;
@@ -43,20 +42,12 @@ export function registerOAuthActions(app, env) {
 				channel = metadata.channel;
 				threadTs = metadata.threadTs;
 			}
-		} catch (e) {
-			console.log('Could not parse private metadata, falling back to DM');
-		}
+		} catch (e) {}
 		
-		// Debug logging
-		console.log('OAuth setup form data:', {
-			userId,
-			selectedServicePath: body.view?.state?.values?.oauth_service_input?.oauth_service_value?.selected_option?.value
-		});
-		
-		const selectedService = body.view?.state?.values?.oauth_service_input?.oauth_service_value?.selected_option?.value;
+		// Extract selected service with safe property access
+		const selectedService = body?.view?.state?.values?.oauth_service_input?.oauth_service_value?.selected_option?.value;
 
 		if (!selectedService) {
-			console.log('No service selected, showing error');
 			await client.chat.postMessage({
 				channel: channel,
 				thread_ts: threadTs,
@@ -64,24 +55,24 @@ export function registerOAuthActions(app, env) {
 			});
 			return;
 		}
-		
-		console.log('Selected service:', selectedService);
 
-		const config = OAUTH_CONFIGS[selectedService];
-		if (!config) {
+		// Validate selected service against allowed values
+		const allowedServices = Object.keys(OAUTH_CONFIGS);
+		if (!allowedServices.includes(selectedService)) {
 			await client.chat.postMessage({
 				channel: channel,
 				thread_ts: threadTs,
-				text: `Error: OAuth configuration not found for service "${selectedService}".`,
+				text: `Error: Invalid service "${selectedService}". Allowed services: ${allowedServices.join(', ')}`,
 			});
 			return;
 		}
 
+		const config = OAUTH_CONFIGS[selectedService];
+
 		try {
-			// Generate state parameter for security
-			const state = `${userId}-${selectedService}-${Date.now()}`;
-			
-			// Store state in KV for verification later
+			// Generate cryptographically secure random state
+			const state = crypto.getRandomValues(new Uint8Array(32))
+				.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
 			await storeOAuthState(state, {
 				userId,
 				service: selectedService,
@@ -100,7 +91,7 @@ export function registerOAuthActions(app, env) {
 			await client.chat.postMessage({
 				channel: channel,
 				thread_ts: threadTs,
-				text: `🔐 *OAuth Authentication Required*\n\nTo authenticate with ${selectedService}, please click the link below to open your browser:\n\n<${authUrl.toString()}|Click here to authenticate with ${selectedService}>\n\n*Note:* This link will expire in 10 minutes for security.`,
+				text: `*OAuth Authentication Required*\n\nTo authenticate with ${selectedService}, please click the link below to open your browser:\n\n<${authUrl.toString()}|Click here to authenticate with ${selectedService}>\n\n*Note:* This link will expire in 10 minutes for security.`,
 			});
 
 		} catch (error) {
@@ -113,7 +104,7 @@ export function registerOAuthActions(app, env) {
 		}
 	});
 
-	// Note: OAuth callback is handled in app.js, not here
+	// **NOTE**: OAuth callback is handled in app.js, not here
 	// This function is kept for future use but the actual callback handling
 	// is done in the main app.js file
 }
@@ -121,42 +112,32 @@ export function registerOAuthActions(app, env) {
 // Helper function to get OAuth token for a user and service
 export async function getOAuthToken(userId, service, env) {
 	try {
-		console.log(`Getting OAuth token for user ${userId}, service ${service}`);
 		const encryptedToken = await getOAuthTokenFromStorage(userId, service, env);
 		if (!encryptedToken) {
-			console.log(`No encrypted token found for ${service}`);
 			return null;
 		}
 
 		const decryptedData = decrypt(encryptedToken, env);
-		console.log(`Token decrypted successfully for ${service}`);
-		
 		const tokenData = JSON.parse(decryptedData);
 		
 		// Check if token is expired and refresh if needed
 		if (tokenData.issued_at && tokenData.expires_in) {
 			const expirationTime = tokenData.issued_at + (tokenData.expires_in * 1000);
 			if (Date.now() >= expirationTime) {
-				console.log(`Token for ${service} is expired, attempting refresh`);
 				return await refreshOAuthToken(userId, service, tokenData, env);
 			}
 		} else if (tokenData.expires_at && Date.now() >= tokenData.expires_at * 1000) {
-			console.log(`Token for ${service} is expired (expires_at), attempting refresh`);
 			return await refreshOAuthToken(userId, service, tokenData, env);
 		}
 
-		console.log(`Returning access token for ${service}: token present`);
-		
 		// Handle different possible field names for access token
 		const accessToken = tokenData.access_token || tokenData.accessToken || tokenData.token;
 		if (!accessToken) {
-			console.error(`No access token found in token data for ${service}. Available fields:`, Object.keys(tokenData));
 			return null;
 		}
 		
 		return accessToken;
 	} catch (error) {
-		console.error(`Error getting OAuth token for ${service}:`, error);
 		return null;
 	}
 }
@@ -192,13 +173,11 @@ async function refreshOAuthToken(userId, service, tokenData, env) {
 		newTokenData.issued_at = Date.now();
 		
 		// Store new token
-		const { encrypt } = await import('./utils/crypto.js');
 		const encryptedToken = encrypt(JSON.stringify(newTokenData), env);
 		await storeOAuthToken(userId, service, encryptedToken, env);
 
 		return newTokenData.access_token;
 	} catch (error) {
-		console.error(`Error refreshing OAuth token for ${service}:`, error);
 		return null;
 	}
 }
