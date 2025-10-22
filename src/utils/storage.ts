@@ -66,6 +66,18 @@ export async function getUserApiKey(userId: string, serviceName: string, env: En
 	}
 }
 
+/**
+ * Check if a user has an API key for a specific server.
+ * @param userId user ID
+ * @param serviceName service name
+ * @param env environment variables
+ * @returns True if the user has an API key stored
+ */
+export async function userHasApiKey(userId: string, serviceName: string, env: Env): Promise<boolean> {
+	const apiKey = await getUserApiKey(userId, serviceName, env);
+	return apiKey !== null;
+}
+
 // ============================================================================
 // OAUTH FUNCTIONS
 // ============================================================================
