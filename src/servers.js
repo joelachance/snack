@@ -1,5 +1,8 @@
 import { serverModalView, removeServerModalView } from './slack-blocks.js';
 import { McpServerHub } from './mcp.js';
+import { storeUserApiKey, userHasApiKey } from './utils/storage.js';
+import { userHasAccessToServer } from './utils/auth.js';
+import { encrypt } from './utils/crypto.js';
 
 /**
  * Register server management Slack actions
@@ -16,23 +19,17 @@ export function registerServerActions(app, env) {
 		try {
 			const mcpClient = new McpServerHub(env);
 			const servers = await mcpClient.loadServersFromKV();
-
 			const serverList = [];
 
 			if (userId) {
 				for (const [name, url] of Object.entries(servers)) {
 					try {
-						const hasAccess = await mcpClient.userHasAccessToServer(
-							userId,
-							name,
-							env.ENCRYPTION_KEY
-						);
-						const hasAuth = await mcpClient.userHasApiKey(userId, name);
+						const hasAuth = await userHasApiKey(userId, name, env);
 
 						serverList.push({
 							server: name,
 							url: url,
-							hasAccess,
+							hasAccess: hasAuth,
 							hasAuth,
 						});
 					} catch (e) {
@@ -58,12 +55,11 @@ export function registerServerActions(app, env) {
 				return;
 			}
 
-			// Format servers for display
+			// TODO: Format servers for display, make it prettier
 			const serverDisplay = serverList
 				.map(server => `• *${server.server}*: ${server.url}`)
 				.join('\n');
 
-			// Send server list in the thread
 			if (context.client) {
 				await context.client.chat.postMessage({
 					channel: channel,
@@ -102,36 +98,8 @@ export function registerServerActions(app, env) {
 		const serverUrl = view?.state?.values?.url_input?.url_value?.value;
 		const apiKey = view?.state?.values?.auth_input?.auth_value?.value;
 
-		// Alternative extraction method
-		const altServerName = body?.view?.state?.values?.server_input?.server_value?.value;
-		const altServerUrl = body?.view?.state?.values?.url_input?.url_value?.value;
-
-		// Debug logging
-		console.log('Add server form data:', {
-			userId,
-			serverName,
-			serverUrl,
-			hasApiKey: !!apiKey,
-			altServerName,
-			altServerUrl,
-			serverNameType: typeof serverName,
-			serverUrlType: typeof serverUrl,
-			serverNameLength: serverName?.length,
-			serverUrlLength: serverUrl?.length
-		});
-
-		// Use alternative extraction if primary fails
-		const finalServerName = serverName && serverName !== 'undefined' ? serverName : altServerName;
-		const finalServerUrl = serverUrl && serverUrl !== 'undefined' ? serverUrl : altServerUrl;
-
 		// Validate required fields
-		if (!finalServerName || !finalServerUrl || finalServerName.trim() === '' || finalServerUrl.trim() === '') {
-			console.log('Server validation failed:', {
-				finalServerName,
-				finalServerUrl,
-				altServerName,
-				altServerUrl
-			});
+		if (!serverName || !serverUrl || serverName.trim() === '' || serverUrl.trim() === '') {
 			await client.chat.postMessage({
 				channel: userId,
 				text: 'Error: Server name and URL are required fields. Please fill in both fields and try again.',
@@ -141,18 +109,17 @@ export function registerServerActions(app, env) {
 
 		try {
 			const mcpClient = new McpServerHub(env);
-
-			// Add server globally
-			await mcpClient.addServerGlobally(finalServerName, finalServerUrl);
+			await mcpClient.addServerGlobally(serverName, serverUrl);
 
 			// Add user's API key if provided
 			if (apiKey) {
-				await mcpClient.addUserApiKey(userId, finalServerName, apiKey, env.ENCRYPTION_KEY);
+				const encryptedApiKey = encrypt(apiKey, env);
+				await storeUserApiKey(userId, serverName, encryptedApiKey, env);
 			}
 
 			await client.chat.postMessage({
 				channel: userId,
-				text: `Server "${finalServerName}" configured successfully!`,
+				text: `Server "${serverName}" configured successfully!`,
 			});
 		} catch (error) {
 			console.error('Error adding server:', error);
@@ -179,7 +146,6 @@ export function registerServerActions(app, env) {
 				return;
 			}
 
-			// Create options for the dropdown
 			const serverOptions = Object.entries(servers).map(([name, url]) => ({
 				text: {
 					type: 'plain_text',
@@ -188,7 +154,6 @@ export function registerServerActions(app, env) {
 				value: name,
 			}));
 
-			// Create the modal with populated options
 			const modalWithOptions = {
 				...removeServerModalView,
 				blocks: removeServerModalView.blocks.map(block => {
@@ -223,25 +188,15 @@ export function registerServerActions(app, env) {
 		const client = context.client;
 		const view = body;
 		const userId = body?.user?.id;
-		
-		// Debug logging
-		console.log('Remove server form data:', {
-			userId,
-			selectedServerPath: body.view?.state?.values?.server_select_input?.server_select_value?.selected_option?.value
-		});
-		
 		const selectedServer = body.view?.state?.values?.server_select_input?.server_select_value?.selected_option?.value;
 
 		if (!selectedServer) {
-			console.log('No server selected, showing error');
 			await client.chat.postMessage({
 				channel: userId,
 				text: 'Error: Please select a server to remove.',
 			});
 			return;
 		}
-		
-		console.log('Selected server to remove:', selectedServer);
 
 		try {
 			const mcpClient = new McpServerHub(env);

@@ -7,7 +7,6 @@ import { McpServerHub } from './mcp.js';
  */
 export function registerToolsActions(app, env) {
 	app.action('show_tools', async obj => {
-		console.log('show_tools action triggered:', { userId: obj.payload?.user?.id, channel: obj.payload?.channel?.id });
 		const { payload: body, context } = obj;
 		const userId = body?.user?.id;
 		const channel = body?.channel?.id;
@@ -33,10 +32,7 @@ export function registerToolsActions(app, env) {
 				return;
 			}
 
-			// Format tools for display
 			const toolList = tools.map(tool => `• ${tool}`).join('\n');
-
-			// Send tools list in the thread
 			if (context.client) {
 				await context.client.chat.postMessage({
 					channel: channel,
