@@ -1,29 +1,12 @@
-import { authModalView } from './slack-blocks.js';
-import { storeAuth } from './utils/storage.js';
-import { encrypt } from './utils/crypto.js';
+import { storeAuth } from '../utils/storage.js';
+import { encrypt } from '../utils/crypto.js';
 
 /**
- * Register authentication-related Slack actions
+ * Register authentication-related Slack views
  * @param {any} app - Slack app instance
  * @param {import('./types').Env} env - Environment variables
  */
-export function registerAuthActions(app, env) {
-	app.action('open_auth_modal', async obj => {
-		const { payload: body, context } = obj;
-		const client = context.client;
-		
-		// Capture thread context for later use
-		const channel = body?.channel?.id;
-		const threadTs = body?.message?.thread_ts || body?.message?.ts;
-
-		await client.views.open({
-			trigger_id: body.trigger_id,
-			view: authModalView,
-			// Pass thread context through private metadata
-			private_metadata: JSON.stringify({ channel, threadTs }),
-		});
-	});
-
+export function registerAuthViews(app, env) {
 	app.view('auth_modal', async obj => {
 		const { payload: body, context } = obj;
 		const client = context.client;
@@ -35,7 +18,7 @@ export function registerAuthActions(app, env) {
 		// Extract thread context from private metadata
 		let channel = userId; // fallback to DM
 		let threadTs = undefined;
-		
+
 		try {
 			const metadata = JSON.parse(view?.private_metadata || '{}');
 			if (metadata.channel && metadata.threadTs) {

@@ -2,19 +2,17 @@ import { MCPClient } from '@mastra/mcp';
 import { Agent } from '@mastra/core/agent';
 import { openai } from '@ai-sdk/openai';
 import { getOAuthToken } from './oauth.js';
-import { OAUTH_SERVICES } from '../configs/oauth.js';
-import { 
-	loadServers, 
-	saveServer, 
+import { OAUTH_SERVICES } from '../../configs/oauth.js';
+import {
+	loadServers,
+	saveServer,
 	removeServer,
 	saveConversationHistory as saveConversationHistoryToKV,
 	loadConversationHistory as loadConversationHistoryFromKV,
-	addMessageToHistory as addMessageToHistoryInKV
-} from './utils/storage';
-import { 
-	findUserApiKey
-} from './utils/auth';
-import type { Env, ConversationMessage, MCPServerConfig } from './types';
+	addMessageToHistory as addMessageToHistoryInKV,
+} from './storage';
+import { findUserApiKey } from './auth';
+import type { Env, ConversationMessage, MCPServerConfig } from '../types';
 
 function buildConversationContext(conversationHistory: ConversationMessage[]): string {
 	if (!conversationHistory?.length) {
@@ -23,7 +21,6 @@ function buildConversationContext(conversationHistory: ConversationMessage[]): s
 	const context = conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
 	return `Previous conversation:\n${context}\n\n`;
 }
-
 
 /**
  * Manages MCP server configurations and creates agents + tools.
@@ -59,19 +56,17 @@ export class McpServerHub {
 		return await loadServers(this.env);
 	}
 
-
 	async saveServerToKV(serverName: string, serverUrl: string): Promise<void> {
 		await saveServer(serverName, serverUrl, this.env);
 	}
 
-	
 	async deleteServerFromKV(serverName: string): Promise<void> {
 		await removeServer(serverName, this.env);
 	}
 
 	/**
 	 * Builds server configurations with user authentication for MCP clients.
-	 * 
+	 *
 	 * @private
 	 * @param userId - User ID for authentication lookup
 	 * @param encryptionKey - Optional encryption key for decrypting API keys
@@ -79,8 +74,8 @@ export class McpServerHub {
 	 * @returns Promise resolving to configured servers object
 	 */
 	private async buildServerConfigs(
-		userId: string, 
-		encryptionKey?: string, 
+		userId: string,
+		encryptionKey?: string,
 		env?: Env
 	): Promise<Record<string, MCPServerConfig>> {
 		const globalServers = await this.loadServersFromKV();
@@ -106,13 +101,12 @@ export class McpServerHub {
 			const serverConfig: MCPServerConfig = {
 				url: new URL(serverUrl),
 			};
-			
+
 			if (apiKey) {
 				// Using `Token` for Sentry
-				const authHeader = serverName.toLowerCase() === 'sentry' 
-					? `Token ${apiKey}` 
-					: `Bearer ${apiKey}`;
-				
+				const authHeader =
+					serverName.toLowerCase() === 'sentry' ? `Token ${apiKey}` : `Bearer ${apiKey}`;
+
 				serverConfig.requestInit = {
 					headers: { Authorization: authHeader },
 				};
@@ -137,13 +131,13 @@ export class McpServerHub {
 	 */
 	async listAvailTools(userId: string, encryptionKey?: string, env?: any): Promise<string[]> {
 		const globalServers = await this.loadServersFromKV();
-		
+
 		if (Object.keys(globalServers).length === 0) {
 			return [];
 		}
 
 		const servers = await this.buildServerConfigs(userId, encryptionKey, env);
-		
+
 		const mcpClient = new MCPClient({
 			id: `tools-${userId}`,
 			servers,
@@ -276,5 +270,3 @@ export class McpServerHub {
 		await addMessageToHistoryInKV(threadId, role, content, this.env);
 	}
 }
-
-

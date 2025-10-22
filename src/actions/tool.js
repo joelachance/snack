@@ -1,4 +1,4 @@
-import { McpServerHub } from './mcp.js';
+import { McpServerHub } from '../utils/mcp.js';
 
 /**
  * Register tools-related Slack actions
