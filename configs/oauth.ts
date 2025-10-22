@@ -16,3 +16,5 @@ export const OAUTH_CONFIGS = {
 		serverUrl: 'https://api.githubcopilot.com/mcp/',
 	},
 };
+
+export const OAUTH_SERVICES = ['sentry', 'github'];

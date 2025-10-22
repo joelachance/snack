@@ -9,15 +9,7 @@
  * - `conversation:{threadId}` - Slack conversation history
  */
 
-interface Env {
-	'SNACK-KV': KVNamespace;
-}
-
-interface KVNamespace {
-	get(key: string): Promise<string | null>;
-	put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
-	delete(key: string): Promise<void>;
-}
+import type { Env } from '../types';
 
 // ============================================================================
 // AUTHENTICATION DATA FUNCTIONS
@@ -33,7 +25,7 @@ export async function storeAuth(
 	env: Env
 ): Promise<void> {
 	const key = `auth:${authData.userId}:${authData.serviceName}`;
-	await env['SNACK-KV'].put(key, JSON.stringify(authData));
+	await env['SNACK-KV']?.put(key, JSON.stringify(authData));
 }
 
 /**
@@ -50,7 +42,7 @@ export async function storeUserApiKey(
 	env: Env
 ): Promise<void> {
 	const key = `auth:${userId}:${serviceName}`;
-	await env['SNACK-KV'].put(key, JSON.stringify({ apiKey: encryptedApiKey }));
+	await env['SNACK-KV']?.put(key, JSON.stringify({ apiKey: encryptedApiKey }));
 }
 
 
@@ -63,7 +55,7 @@ export async function storeUserApiKey(
  */
 export async function getUserApiKey(userId: string, serviceName: string, env: Env): Promise<string | null> {
 	const key = `auth:${userId}:${serviceName}`;
-	const value = await env['SNACK-KV'].get(key);
+	const value = await env['SNACK-KV']?.get(key);
 	if (!value) return null;
 	try {
 		const authData = JSON.parse(value) as { apiKey: string | null; userId: string; serviceName: string; createdAt: string };
@@ -90,7 +82,7 @@ export async function storeOAuthState(
 	env: Env
 ): Promise<void> {
 	const key = `oauth:state:${state}`;
-	await env['SNACK-KV'].put(key, JSON.stringify(stateData), { expirationTtl: 600 }); // 10 minutes
+	await env['SNACK-KV']?.put(key, JSON.stringify(stateData), { expirationTtl: 600 }); // 10 minutes
 }
 
 /**
@@ -101,7 +93,7 @@ export async function storeOAuthState(
  */
 export async function getOAuthState(state: string, env: Env): Promise<{ userId: string; service: string; timestamp: number } | null> {
 	const key = `oauth:state:${state}`;
-	const value = await env['SNACK-KV'].get(key);
+	const value = await env['SNACK-KV']?.get(key);
 	if (!value) return null;
 	try {
 		return JSON.parse(value) as { userId: string; service: string; timestamp: number };
@@ -117,7 +109,7 @@ export async function getOAuthState(state: string, env: Env): Promise<{ userId: 
  */
 export async function deleteOAuthState(state: string, env: Env): Promise<void> {
 	const key = `oauth:state:${state}`;
-	await env['SNACK-KV'].delete(key);
+	await env['SNACK-KV']?.delete(key);
 }
 
 /**
@@ -134,7 +126,7 @@ export async function storeOAuthToken(
 	env: Env
 ): Promise<void> {
 	const key = `oauth:token:${userId}:${service}`;
-	await env['SNACK-KV'].put(key, encryptedToken);
+	await env['SNACK-KV']?.put(key, encryptedToken);
 }
 
 /**
@@ -146,7 +138,7 @@ export async function storeOAuthToken(
  */
 export async function getOAuthToken(userId: string, service: string, env: Env): Promise<string | null> {
 	const key = `oauth:token:${userId}:${service}`;
-	return await env['SNACK-KV'].get(key);
+	return await env['SNACK-KV']?.get(key) ?? null;
 }
 
 // ============================================================================
@@ -159,7 +151,7 @@ export async function getOAuthToken(userId: string, service: string, env: Env): 
  * @returns server configurations mapping
  */
 export async function loadServers(env: Env): Promise<Record<string, string>> {
-	const value = await env['SNACK-KV'].get('servers:config');
+	const value = await env['SNACK-KV']?.get('servers:config');
 	if (!value) return {};
 	try {
 		return JSON.parse(value) as Record<string, string>;
@@ -177,7 +169,7 @@ export async function loadServers(env: Env): Promise<Record<string, string>> {
 export async function saveServer(serverName: string, serverUrl: string, env: Env): Promise<void> {
 	const servers = await loadServers(env);
 	servers[serverName.toLowerCase()] = serverUrl;
-	await env['SNACK-KV'].put('servers:config', JSON.stringify(servers));
+	await env['SNACK-KV']?.put('servers:config', JSON.stringify(servers));
 }
 
 /**
@@ -188,7 +180,7 @@ export async function saveServer(serverName: string, serverUrl: string, env: Env
 export async function removeServer(serverName: string, env: Env): Promise<void> {
 	const servers = await loadServers(env);
 	delete servers[serverName.toLowerCase()];
-	await env['SNACK-KV'].put('servers:config', JSON.stringify(servers));
+	await env['SNACK-KV']?.put('servers:config', JSON.stringify(servers));
 }
 
 // ============================================================================
@@ -207,7 +199,7 @@ export async function saveConversationHistory(
 	env: Env
 ): Promise<void> {
 	const key = `conversation:${threadId}`;
-	await env['SNACK-KV'].put(
+	await env['SNACK-KV']?.put(
 		key,
 		JSON.stringify({
 			messages,
@@ -228,7 +220,7 @@ export async function loadConversationHistory(
 	env: Env
 ): Promise<Array<{ role: string; content: string }>> {
 	const key = `conversation:${threadId}`;
-	const data = await env['SNACK-KV'].get(key);
+	const data = await env['SNACK-KV']?.get(key);
 
 	if (!data) return [];
 

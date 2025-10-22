@@ -55,6 +55,9 @@ export default [
 			prettier: prettier,
 		},
 		rules: {
+			// Disable base no-unused-vars in favor of TypeScript version
+			'no-unused-vars': 'off',
+
 			// Ban 'any' type usage - temporarily disabled for development
 			'@typescript-eslint/no-explicit-any': 'warn',
 			'@typescript-eslint/no-unsafe-assignment': 'warn',
@@ -70,11 +73,46 @@ export default [
 			'@typescript-eslint/no-non-null-assertion': 'error',
 
 			// General TypeScript recommendations
-			'@typescript-eslint/no-unused-vars': ['warn', { 'argsIgnorePattern': '^_' }],
+			'@typescript-eslint/no-unused-vars': [
+				'warn',
+				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+			],
 			'@typescript-eslint/explicit-function-return-type': 'warn',
 
 			// Prettier integration
 			'prettier/prettier': 'error',
+		},
+	},
+	{
+		files: ['**/*.js'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			globals: {
+				// Cloudflare Workers globals
+				Request: 'readonly',
+				Response: 'readonly',
+				Headers: 'readonly',
+				URL: 'readonly',
+				URLSearchParams: 'readonly',
+				FormData: 'readonly',
+				Blob: 'readonly',
+				File: 'readonly',
+				ReadableStream: 'readonly',
+				WritableStream: 'readonly',
+				TransformStream: 'readonly',
+				CompressionStream: 'readonly',
+				DecompressionStream: 'readonly',
+				TextEncoder: 'readonly',
+				TextDecoder: 'readonly',
+				crypto: 'readonly',
+				fetch: 'readonly',
+				console: 'readonly',
+				process: 'readonly',
+			},
+		},
+		rules: {
+			'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 		},
 	},
 ];

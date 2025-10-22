@@ -1,8 +1,5 @@
 import CryptoJS from 'crypto-js';
-
-interface Env {
-	ENCRYPTION_KEY: string;
-}
+import type { Env } from '../types';
 
 /**
  * Encrypt API key using crypto-js library

@@ -2,6 +2,11 @@ import { authModalView } from './slack-blocks.js';
 import { storeAuth } from './utils/storage.js';
 import { encrypt } from './utils/crypto.js';
 
+/**
+ * Register authentication-related Slack actions
+ * @param {any} app - Slack app instance
+ * @param {import('./types').Env} env - Environment variables
+ */
 export function registerAuthActions(app, env) {
 	app.action('open_auth_modal', async obj => {
 		const { payload: body, context } = obj;

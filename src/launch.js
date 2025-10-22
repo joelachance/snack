@@ -1,6 +1,11 @@
 import { helpMenuBlocks } from './slack-blocks.js';
 import { McpServerHub } from './mcp.js';
 
+/**
+ * Register launch-related Slack actions
+ * @param {any} app - Slack app instance
+ * @param {import('./types').Env} env - Environment variables
+ */
 export function registerLaunchActions(app, env) {
 	app.event('message', async ({ payload: message, context }) => {
 		const say = context.say;

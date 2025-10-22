@@ -49,5 +49,5 @@
 		"types": ["node", "./worker-configuration.d.ts"]
 	},
 	"exclude": [".wrangler/**", "dist/**", "node_modules/**"],
-	"include": ["worker-configuration.d.ts", "api/**/*.ts", "test/**/*.ts"]
+	"include": ["worker-configuration.d.ts", "api/**/*.ts", "test/**/*.ts", "actions/mcp.ts"]
 }
